@@ -21,6 +21,7 @@ INSTALLED_APPS = [
     'rest_framework.authtoken',
     'users.apps.UsersConfig',
     'course.apps.CourseConfig',
+    'upload.apps.UploadConfig',
     'homework.apps.HomeworkConfig',
     'django_oss_storage',
 ]

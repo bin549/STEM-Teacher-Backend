@@ -4,7 +4,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from .models import Entity, Genre, Lecture, Format
 from users.models import Profile
-from .serializers import CourseSerializer, LectureSerializer
+from .serializers import CourseSerializer, LectureSerializer, GenreSerializer
 from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.decorators import api_view
@@ -14,9 +14,15 @@ from django.db.models import Q
 class CourseAPI(APIView):
 
     def get(self, request, format=None):
+        print(request.query_params)
+        print(request.query_params)
         if request.query_params.__contains__('id'):
-            course = Entity.objects.get(Q(id=request.query_params["id"]))
-            serializer = CourseSerializer(course, many=False)
+            courses = Entity.objects.filter(Q(owner=request.query_params["id"]))
+            if request.query_params.__contains__('genre'):
+                courses = courses.filter(Q(genre=request.query_params["genre"]))
+            if request.query_params.__contains__('status'):
+                courses = courses.filter(Q(is_visible=request.query_params["status"]))
+            serializer = CourseSerializer(courses, many=True)
             return Response(serializer.data)
         else:
             courses = Entity.objects.filter(Q(owner=request.query_params["0"]))
@@ -79,3 +85,12 @@ class LectureAPI(APIView):
             lectures = Lecture.objects.filter(Q(course=request.query_params["course_id"]))
             serializer = LectureSerializer(lectures, many=True)
             return Response(serializer.data)
+
+
+
+class GenresAPI(APIView):
+
+    def get(self, request, format=None):
+        genres = Genre.objects.all()
+        serializer = GenreSerializer(genres, many=True)
+        return Response(serializer.data)
