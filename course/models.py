@@ -83,3 +83,14 @@ class Selection(models.Model):
 
     def __str__(self):
         return '%s' % self.id
+
+
+class Wishlist(models.Model):
+
+    id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+    user = models.ForeignKey(Profile, null=True, blank=True, on_delete=models.CASCADE)
+    course = models.ForeignKey(Entity, null=True, blank=True, on_delete=models.CASCADE)
+    collect_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '%s' % self.id

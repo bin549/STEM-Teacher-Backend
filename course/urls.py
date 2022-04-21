@@ -10,4 +10,7 @@ urlpatterns = [
     path('getCourseById/', views.CourseAPI.as_view()),
     path('getLecturesByCourseId/', views.LectureAPI.as_view()),
     path('getGenres/', views.GenresAPI.as_view()),
+    path('updateCourse/', views.CourseAPI.as_view()),
+    path('deleteSelection/', views.SelectionAPI.as_view()),
+    path('createSelect/', views.SelectionAPI.as_view()),
 ]
