@@ -4,7 +4,7 @@ from django.shortcuts import render
 from rest_framework.views import APIView
 from .models import Entity, Genre, Lecture, Format, Selection, Wishlist
 from users.models import Profile
-from .serializers import CourseSerializer, LectureSerializer, GenreSerializer
+from .serializers import CourseSerializer, LectureSerializer, GenreSerializer, FormatSerializer
 from rest_framework.response import Response
 from rest_framework import generics
 from rest_framework.decorators import api_view
@@ -16,18 +16,21 @@ from rest_framework import status
 class CourseAPI(APIView):
 
     def get(self, request, format=None):
-        print(request.query_params)
-        print(request.query_params)
-        if request.query_params.__contains__('id'):
+        if request.query_params.__contains__('method'):
+            course = Entity.objects.get(Q(id=request.query_params["id"]))
+            serializer = CourseSerializer(course, many=False)
+            return Response(serializer.data)
+        elif request.query_params.__contains__('mode'):
+            assignment = Assignment.objects.get(Q(id=request.query_params["id"]))
+            course = Entity.objects.get(Q(id=assignment.course.id))
+            serializer = CourseSerializer(course, many=False)
+            return Response(serializer.data)
+        else:
             courses = Entity.objects.filter(Q(owner=request.query_params["id"]))
             if request.query_params.__contains__('genre'):
                 courses = courses.filter(Q(genre=request.query_params["genre"]))
             if request.query_params.__contains__('status'):
                 courses = courses.filter(Q(is_visible=request.query_params["status"]))
-            serializer = CourseSerializer(courses, many=True)
-            return Response(serializer.data)
-        else:
-            courses = Entity.objects.filter(Q(owner=request.query_params["0"]))
             serializer = CourseSerializer(courses, many=True)
             return Response(serializer.data)
 
@@ -91,11 +94,50 @@ class LectureAPI(APIView):
             serializer = LectureSerializer(lectures, many=True)
             print(serializer.data)
             return Response(serializer.data)
+        elif request.query_params.__contains__('mode'):
+            lectures = Lecture.objects.filter(Q(course=request.query_params["id"]))
+            lecture = lectures.get(Q(is_preview=True))
+            serializer = LectureSerializer(lecture, many=False)
+            return Response(serializer.data)
         else:
             lectures = Lecture.objects.filter(Q(course=request.query_params["course_id"]))
             serializer = LectureSerializer(lectures, many=True)
             return Response(serializer.data)
 
+    def post(self, request, format=None):
+        try:
+            print(request.data)
+            lecture = Lecture()
+            course = Entity.objects.get(Q(id=request.data['course']))
+            format = Format.objects.get(Q(id=request.data['format']))
+            lecture.title = request.data['title']
+            lecture.media = request.data['content']
+            lecture.created_time = datetime.timedelta(days=30)
+            lecture.course = course
+            lecture.format = format
+            lecture.save()
+            return Response(1)
+        except Exception:
+            return Response(0)
+
+    def put(self, request, format=None):
+        if request.query_params.__contains__('update'):
+            lecture = Lecture.objects.get(Q(id=request.query_params['id']))
+            course = Entity.objects.get(Q(id=lecture.course.id))
+            pre_lecture = Lecture.objects.get(Q(is_preview=True) & Q(course=course.id))
+            pre_lecture.is_preview = False
+            pre_lecture.save()
+            lecture.is_preview = True
+            lecture.save()
+        return Response(1)
+
+    def delete(self, request, format=None):
+        try:
+            lecture = Lecture.objects.get(Q(id=request.data['id']))
+            lecture.delete()
+            return Response(1)
+        except Exception:
+            return Response(0)
 
 
 class GenresAPI(APIView):
@@ -142,3 +184,12 @@ class SelectionAPI(APIView):
             # execution.delete()
         # selection.delete()
         return Response(1)
+
+
+
+class FormatAPI(APIView):
+
+    def get(self, request, format=None):
+        formats = Format.objects.all()
+        serializer = FormatSerializer(formats, many=True)
+        return Response(serializer.data)
