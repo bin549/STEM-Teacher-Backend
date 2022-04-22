@@ -7,4 +7,5 @@ urlpatterns = [
     path('updateExecution/', views.ExecutionAPI.as_view()),
     path('getExecutionImage/', views.MediaAPI.as_view()),
     path('getExecutionHomework/', views.AssignmentAPI.as_view()),
+    path('createAssignment/', views.AssignmentAPI.as_view()),
 ]

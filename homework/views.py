@@ -4,6 +4,8 @@ from .serializer import ActivitySerializer, ExecutionSerializer, MediaSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Q
+from course.models import Entity, Selection
+import datetime
 
 
 class AssignmentAPI(APIView):
@@ -13,7 +15,28 @@ class AssignmentAPI(APIView):
             assignments = Assignment.objects.all()
             assignments = assignments.filter(Q(course=request.query_params['selectedCourse']))
             serializer = ActivitySerializer(assignments, many=True)
+        else:
+            assignments = Assignment.objects.all()
+            serializer = ActivitySerializer(assignments, many=True)
         return Response(serializer.data)
+
+    def post(self, request, format=None):
+        n_course = Entity.objects.get(Q(id=request.query_params['course']))
+        assignment = Assignment()
+        assignment.course = n_course
+        assignment.intro = request.query_params['title']
+        assignment.description = request.query_params['content']
+        assignment.start_time = datetime.timedelta(days=30)
+        assignment.end_time = datetime.timedelta(days=30)
+        assignment.save()
+        selections = Selection.objects.filter(Q(course=request.query_params['course']))
+        for selection in selections:
+            execution = Execution()
+            execution.homework = assignment
+            execution.user = selection.user
+            execution.save()
+        return Response(1)
+
 
 
 class ExecutionAPI(APIView):
