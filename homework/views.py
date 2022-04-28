@@ -1,10 +1,11 @@
 from django.shortcuts import render
-from .models import Assignment, Execution, Media, MediaType
+from .models import Assignment, Execution, Media, MediaType, ExecutionStar
 from .serializer import ActivitySerializer, ExecutionSerializer, MediaSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db.models import Q
 from course.models import Entity, Selection
+from users.models import Profile
 import datetime
 
 
@@ -15,10 +16,11 @@ class AssignmentAPI(APIView):
             assignments = Assignment.objects.all()
             assignments = assignments.filter(Q(course=request.query_params['selectedCourse']))
             serializer = ActivitySerializer(assignments, many=True)
+            return Response(serializer.data)
         else:
             assignments = Assignment.objects.all()
             serializer = ActivitySerializer(assignments, many=True)
-        return Response(serializer.data)
+            return Response(serializer.data)
 
     def post(self, request, format=None):
         n_course = Entity.objects.get(Q(id=request.query_params['course']))
@@ -37,12 +39,42 @@ class AssignmentAPI(APIView):
             execution.save()
         return Response(1)
 
+    def put(self, request, format=None):
+        activity = Assignment.objects.get(Q(id=request.query_params["id"]))
+        activity.intro = request.query_params['intro']
+        activity.description = request.query_params['description']
+        activity.save()
+        return Response(1)
+
+    def delete(self, request, format=None):
+        activity = Assignment.objects.get(Q(id=request.query_params['id']))
+        executions = Execution.objects.filter(Q(homework=request.query_params['id']))
+        for execution in executions:
+            medias = Media.objects.filter(Q(execution=execution.id))
+            executionStars = ExecutionStar.objects.filter(Q(execution=execution.id))
+            if medias.exists():
+                medias.delete()
+            if executionStars.exists():
+                executionStars.delete()
+            execution.delete()
+        activity.delete()
+        return Response(1)
 
 
 class ExecutionAPI(APIView):
 
     def get(self, request, format=None):
-        if request.query_params.__contains__('score'):
+        if request.query_params.__contains__('is_done'):
+            if request.query_params["is_done"] == "true":
+                executions = Execution.objects.filter(Q(homework=request.query_params["id"]))
+                print(1)
+                executions = executions.exclude(Q(finish_time=None))
+                return Response(len(executions))
+            else:
+                executions = Execution.objects.filter(Q(homework=request.query_params["id"]) & Q(finish_time=None))
+                print(2)
+                return Response(len(executions))
+        elif request.query_params.__contains__('score'):
             execution = Execution.objects.get(Q(id=request.query_params["id"]))
             serializer = ExecutionSerializer(execution, many=False)
             return Response(serializer.data)
@@ -50,6 +82,18 @@ class ExecutionAPI(APIView):
             executions = Execution.objects.filter(Q(homework=request.query_params["id"]))
             serializer = ExecutionSerializer(executions, many=True)
             return Response(serializer.data)
+        elif request.query_params.__contains__('is_excellent'):
+            courses = Entity.objects.filter(Q(owner=request.query_params["owner_id"]))
+            excellent_executions = []
+            for course in courses:
+                assignments = Assignment.objects.filter((Q(course=course.id)))
+                for assignment in assignments:
+                    executions = Execution.objects.filter(Q(homework=assignment.id) & Q(is_excellent=True))
+                    if executions.exists():
+                        for execution in executions:
+                            serializer = ExecutionSerializer(execution, many=False)
+                            excellent_executions.append(serializer.data)
+            return Response(excellent_executions)
         else:
             executions = Execution.objects.all()
             serializer = ExecutionSerializer(executions, many=True)
@@ -57,7 +101,8 @@ class ExecutionAPI(APIView):
 
     def put(self, request, format=None):
         execution = Execution.objects.get(Q(id=request.data['id']))
-        execution.score = request.data['score']
+        execution.appraise_star = request.data['appraise_star']
+        execution.appraise_text = request.data['appraise_text']
         execution.save()
         return Response(1)
 

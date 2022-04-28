@@ -12,6 +12,7 @@ class ActivitySerializer(serializers.ModelSerializer):
             "intro",
             "description",
             "start_time",
+            "end_time",
             "course",
         )
 
@@ -23,10 +24,11 @@ class ExecutionSerializer(serializers.ModelSerializer):
         model = Execution
         fields = (
             "id",
-            "score",
             "finish_time",
             "is_excellent",
             "content_text",
+            "appraise_star",
+            "appraise_text",
             "homework",
             "user",
         )

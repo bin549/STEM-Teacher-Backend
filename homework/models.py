@@ -21,10 +21,11 @@ class Assignment(models.Model):
 class Execution(models.Model):
 
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
-    score = models.IntegerField(null=True)
     finish_time = models.DateTimeField(null=True)
     is_excellent = models.BooleanField(default=False)
     content_text = models.CharField(null=True, max_length=2000)
+    appraise_star = models.IntegerField(null=True)
+    appraise_text = models.CharField(max_length=200, blank=True, null=True)
     homework = models.ForeignKey(Assignment, on_delete=models.CASCADE, null=True, blank=True)
     user = models.ForeignKey(Profile, on_delete=models.CASCADE, null=True, blank=True)
 
@@ -55,3 +56,34 @@ class Media(models.Model):
         if self.media:
             return self.media.url
         return ''
+
+
+class ExecutionStar(models.Model):
+
+    id = models.UUIDField(default=uuid.uuid4, unique=True,primary_key=True, editable=False)
+    user = models.ForeignKey(Profile, null=True, blank=True, on_delete=models.CASCADE)
+    execution = models.ForeignKey(Execution, null=True, blank=True, on_delete=models.CASCADE)
+    star_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '%s' % self.id
+
+
+class LogType(models.Model):
+
+    id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+    name = models.CharField(max_length=200, blank=True, null=True)
+
+    def __str__(self):
+        return '%s' % self.name
+
+
+class Log(models.Model):
+
+    id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+    execution = models.ForeignKey(Execution, on_delete=models.CASCADE, null=True, blank=True)
+    log_type = models.ForeignKey(LogType, on_delete=models.CASCADE, null=True, blank=True)
+    finish_time = models.DateTimeField(null=True)
+
+    def __str__(self):
+        return '%s' % self.id

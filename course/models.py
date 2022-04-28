@@ -22,6 +22,7 @@ class Entity(models.Model):
     owner = models.ForeignKey(Profile, null=True, blank=True, on_delete=models.CASCADE)
     genre = models.ForeignKey(Genre, null=True, blank=True, on_delete=models.CASCADE)
     is_visible = models.BooleanField(default=False, null=True)
+    price = models.IntegerField()
     serial_number = models.IntegerField()
 
     class Meta:
@@ -57,9 +58,12 @@ class Lecture(models.Model):
     index = models.IntegerField(default=1)
     title = models.CharField(max_length=200)
     created_time = models.DateTimeField(auto_now_add=True)
+    cover_img = models.ImageField(null=True, blank=True, upload_to='profiles/', default="profiles/user-default.png")
     media = models.ImageField(null=True, blank=True, upload_to='profiles/', default="profiles/about-us-video.mp4")
     format = models.ForeignKey(Format, null=True, blank=True, on_delete=models.CASCADE)
     is_preview = models.BooleanField(default=False, null=True)
+    is_free = models.BooleanField(default=False, null=True)
+    is_comment_check = models.BooleanField(default=False, null=True)
     course = models.ForeignKey(Entity, null=True, blank=True, on_delete=models.CASCADE)
 
     def __str__(self):
@@ -71,6 +75,11 @@ class Lecture(models.Model):
     def get_media(self):
         if self.media:
             return self.media.url
+        return ''
+
+    def get_cover_img(self):
+        if self.cover_img:
+            return self.cover_img.url
         return ''
 
 
@@ -91,6 +100,34 @@ class Wishlist(models.Model):
     user = models.ForeignKey(Profile, null=True, blank=True, on_delete=models.CASCADE)
     course = models.ForeignKey(Entity, null=True, blank=True, on_delete=models.CASCADE)
     collect_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '%s' % self.id
+
+
+class Comment(models.Model):
+
+    id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+    user = models.ForeignKey(Profile, null=True, blank=True, on_delete=models.CASCADE)
+    lecture = models.ForeignKey(Lecture, null=True, blank=True, on_delete=models.CASCADE)
+    content = models.CharField(max_length=2000)
+    comment_time = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return '%s' % self.id
+
+    class Meta:
+        ordering = ['comment_time']
+
+
+
+class Evaluation(models.Model):
+
+    id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+    user = models.ForeignKey(Profile, null=True, blank=True, on_delete=models.CASCADE)
+    course = models.ForeignKey(Entity, null=True, blank=True, on_delete=models.CASCADE)
+    content = models.CharField(max_length=2000)
+    evaluate_time= models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return '%s' % self.id
