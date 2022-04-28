@@ -1,3 +1,4 @@
+import datetime
 from django.shortcuts import render
 from .models import Assignment, Execution, Media, MediaType, ExecutionStar
 from .serializer import ActivitySerializer, ExecutionSerializer, MediaSerializer
@@ -6,7 +7,6 @@ from rest_framework.response import Response
 from django.db.models import Q
 from course.models import Entity, Selection
 from users.models import Profile
-import datetime
 
 
 class AssignmentAPI(APIView):
@@ -26,10 +26,10 @@ class AssignmentAPI(APIView):
         n_course = Entity.objects.get(Q(id=request.query_params['course']))
         assignment = Assignment()
         assignment.course = n_course
-        assignment.intro = request.query_params['title']
-        assignment.description = request.query_params['content']
-        assignment.start_time = datetime.timedelta(days=30)
-        assignment.end_time = datetime.timedelta(days=30)
+        assignment.intro = request.query_params['intro']
+        assignment.description = request.query_params['description']
+        assignment.start_time = request.query_params['start_time']
+        assignment.end_time = request.query_params['end_time']
         assignment.save()
         selections = Selection.objects.filter(Q(course=request.query_params['course']))
         for selection in selections:
@@ -100,11 +100,18 @@ class ExecutionAPI(APIView):
             return Response(serializer.data)
 
     def put(self, request, format=None):
-        execution = Execution.objects.get(Q(id=request.data['id']))
-        execution.appraise_star = request.data['appraise_star']
-        execution.appraise_text = request.data['appraise_text']
-        execution.save()
-        return Response(1)
+        if request.data.__contains__("mode"):
+            if request.data["mode"] == "status":
+                execution = Execution.objects.get(Q(id=request.data["id"]))
+                execution.is_excellent = True
+                execution.save()
+                return Response(1)
+        else:
+            execution = Execution.objects.get(Q(id=request.data['id']))
+            execution.appraise_star = request.data['appraise_star']
+            execution.appraise_text = request.data['appraise_text']
+            execution.save()
+            return Response(1)
 
 
 class MediaAPI(APIView):

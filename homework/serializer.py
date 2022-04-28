@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Assignment, Execution, Media, MediaType
+from .models import Assignment, Execution, Media, MediaType, Log
 
 
 class ActivitySerializer(serializers.ModelSerializer):
@@ -56,4 +56,17 @@ class MediaTypeSerializer(serializers.ModelSerializer):
        fields = (
            "id",
            "name",
+       )
+
+
+class LogSerializer(serializers.ModelSerializer):
+
+   class Meta:
+
+       model = Log
+       fields = (
+           "id",
+           "execution",
+           "log_type",
+           "log_time",
        )

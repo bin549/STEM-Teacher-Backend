@@ -83,7 +83,7 @@ class Log(models.Model):
     id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
     execution = models.ForeignKey(Execution, on_delete=models.CASCADE, null=True, blank=True)
     log_type = models.ForeignKey(LogType, on_delete=models.CASCADE, null=True, blank=True)
-    finish_time = models.DateTimeField(null=True)
+    log_time = models.DateTimeField(null=True)
 
     def __str__(self):
         return '%s' % self.id
