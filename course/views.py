@@ -2,7 +2,7 @@ import datetime
 import random
 from django.shortcuts import render
 from rest_framework.views import APIView
-from .models import Entity, Genre, Lecture, Format, Selection, Wishlist, Comment, Evaluation, Progress
+from .models import Entity, Genre, Lecture, Format, Selection, Wishlist, Comment, Evaluation, Progress, History
 from users.models import Profile
 from .serializers import CourseSerializer, LectureSerializer, GenreSerializer, FormatSerializer, CommentSerializer, EvaluationSerializer
 from rest_framework.response import Response
@@ -87,12 +87,20 @@ class CourseAPI(APIView):
             evaluations = Evaluation.objects.filter(Q(course=course.id))
             lectures = Lecture.objects.filter(Q(course=course.id))
             activities = Assignment.objects.filter(Q(course=course.id))
+            print(1)
             if lectures.exists():
                 for lecture in lectures:
                     comments = Comment.objects.filter(Q(lecture=lecture.id))
+                    progresses = Progress.objects.filter(Q(lecture=lecture.id))
+                    histories = History.objects.filter(Q(lecture=lecture.id))
                     for comment in comments:
                         comment.delete()
+                    for progress in progresses:
+                        progress.delete()
+                    for history in histories:
+                        history.delete()
                     lecture.delete()
+            print(2)
             if activities.exists():
                 for activity in activities:
                     executions = Execution.objects.filter(Q(homework=activity.id))
@@ -105,14 +113,13 @@ class CourseAPI(APIView):
                             executionStars.delete()
                         execution.delete()
                     activity.delete()
+            print(3)
             if evaluations.exists():
                 for evaluation in evaluations:
                     evaluation.delete()
-
             if wishlists.exists():
                 for wishlist in wishlists:
                     wishlist.delete()
-
             if selections.exists():
                 for selection in selections:
                     selection.delete()
