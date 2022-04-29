@@ -1,6 +1,6 @@
 import datetime
 from django.shortcuts import render
-from .models import Assignment, Execution, Media, MediaType, ExecutionStar
+from .models import Assignment, Execution, Media, MediaType, ExecutionStar, Log
 from .serializer import ActivitySerializer, ExecutionSerializer, MediaSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -106,11 +106,13 @@ class ExecutionAPI(APIView):
                 execution.is_excellent = True
                 execution.save()
                 return Response(1)
+            else:
+                execution = Execution.objects.get(Q(id=request.data['id']))
+                execution.appraise_star = request.data['appraise_star']
+                execution.appraise_text = request.data['appraise_text']
+                execution.save()
+                return Response(1)
         else:
-            execution = Execution.objects.get(Q(id=request.data['id']))
-            execution.appraise_star = request.data['appraise_star']
-            execution.appraise_text = request.data['appraise_text']
-            execution.save()
             return Response(1)
 
 
@@ -122,3 +124,27 @@ class MediaAPI(APIView):
         medias = Media.objects.filter(Q(execution=execution.id) & Q(type=media_type))
         serializer = MediaSerializer(medias, many=True)
         return Response(serializer.data)
+
+
+class LogAPI(APIView):
+
+    def get(self, request, format=None):
+        logs = Log.objects.all()
+        datas = []
+        for log in logs:
+            title = ""
+            content = ""
+            if log.log_type.name == "提交":
+                content += log.execution.user.name
+                content += "的作业已提交"
+                title += "活动完成("
+                title += log.execution.homework.course.title
+                title += ")"
+            data = {
+                "title" : title,
+                "content" : content,
+                "timestamp" : log.log_time,
+            }
+            datas.append(data)
+        print(datas)
+        return Response(datas)

@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Entity, Lecture, Format, Genre, Comment, Evaluation
+from .models import Entity, Lecture, Format, Genre, Comment, Evaluation, Progress
 
 
 class CourseSerializer(serializers.ModelSerializer):
@@ -47,7 +47,6 @@ class LectureSerializer(serializers.ModelSerializer):
             "format",
             "course",
             "is_preview",
-            "is_free",
             "is_comment_check",
             "get_absolute_url",
             "get_media"
@@ -87,4 +86,16 @@ class EvaluationSerializer(serializers.ModelSerializer):
             "course",
             "content",
             "evaluate_time",
+        )
+
+
+class ProgressSerializer(serializers.ModelSerializer):
+
+    class Meta:
+        model = Progress
+        fields = (
+            "id",
+            "user",
+            "lecture",
+            "percent",
         )

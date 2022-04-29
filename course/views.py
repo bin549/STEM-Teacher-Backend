@@ -2,7 +2,7 @@ import datetime
 import random
 from django.shortcuts import render
 from rest_framework.views import APIView
-from .models import Entity, Genre, Lecture, Format, Selection, Wishlist, Comment, Evaluation
+from .models import Entity, Genre, Lecture, Format, Selection, Wishlist, Comment, Evaluation, Progress
 from users.models import Profile
 from .serializers import CourseSerializer, LectureSerializer, GenreSerializer, FormatSerializer, CommentSerializer, EvaluationSerializer
 from rest_framework.response import Response
@@ -25,6 +25,14 @@ class CourseAPI(APIView):
             course = Entity.objects.get(Q(id=assignment.course.id))
             serializer = CourseSerializer(course, many=False)
             return Response(serializer.data)
+        elif request.query_params.__contains__('is_sort'):
+            courses = Entity.objects.filter(Q(owner=request.query_params["id"])).order_by("-created_time")
+            if len(courses) > 5:
+                serializer = CourseSerializer(courses[0:5], many=True)
+                return Response(serializer.data)
+            else:
+                serializer = CourseSerializer(courses, many=True)
+                return Response(serializer.data)
         else:
             courses = Entity.objects.filter(Q(owner=request.query_params["id"]))
             if request.query_params.__contains__('genre'):
@@ -85,7 +93,6 @@ class CourseAPI(APIView):
                     for comment in comments:
                         comment.delete()
                     lecture.delete()
-
             if activities.exists():
                 for activity in activities:
                     executions = Execution.objects.filter(Q(homework=activity.id))
@@ -98,7 +105,6 @@ class CourseAPI(APIView):
                             executionStars.delete()
                         execution.delete()
                     activity.delete()
-
             if evaluations.exists():
                 for evaluation in evaluations:
                     evaluation.delete()
@@ -157,10 +163,6 @@ class LectureAPI(APIView):
             lecture = Lecture()
             course = Entity.objects.get(Q(id=request.data['course']))
             is_preview = False
-            try:
-                Lecture.objects.get(Q(course=course.id))
-            except Exception:
-                is_preview = True
             format = Format.objects.get(Q(id=request.data['format']))
             lecture.title = request.data['title']
             lecture.media = request.data['content']
@@ -168,26 +170,33 @@ class LectureAPI(APIView):
             lecture.course = course
             lecture.format = format
             lecture.is_preview = is_preview
+            lecture.is_comment_check = True
             lecture.save()
+            selections = Selection.objects.filter(Q(course=request.data["course"]))
+            for selection in selections:
+                progress = Progress()
+                progress.user = selection.user
+                progress.lecture = lecture
+                progress.percent = 0.0
+                progress.save()
             return Response(1)
         except Exception:
             return Response(0)
 
     def put(self, request, format=None):
-        if request.query_params.__contains__('update'):
+        if request.query_params.__contains__('status'):
             lecture = Lecture.objects.get(Q(id=request.query_params['id']))
-            course = Entity.objects.get(Q(id=lecture.course.id))
-            pre_lecture = Lecture.objects.get(Q(is_preview=True) & Q(course=course.id))
-            pre_lecture.is_preview = False
-            pre_lecture.save()
-            lecture.is_preview = True
+            lecture.is_preview = request.query_params["status"]
             lecture.save()
+            return Response(1)
         return Response(1)
 
     def delete(self, request, format=None):
         try:
             lecture = Lecture.objects.get(Q(id=request.data['id']))
             comments = Comment.objects.filter(Q(lecture=lecture.id))
+            progresses = Progress.objects.filter(Q(lecture=lecture.id))
+            progresses.delete()
             for comment in comments:
                 comment.delete()
             lecture.delete()
@@ -222,6 +231,7 @@ class SelectionAPI(APIView):
             selection = Selection()
             selection.user = user
             selection.course = course
+            lectures = Lecture.objects.filter(Q(course=course.id))
             selection.select_time = datetime.timedelta(days=30)
             homeworks = Assignment.objects.filter(Q(course=course.id))
             for homework in homeworks:
@@ -229,9 +239,14 @@ class SelectionAPI(APIView):
                 execution.homework = homework
                 execution.user = user
                 execution.save()
+            for lecture in lectures:
+                progress = Progress()
+                progress.user = user
+                progress.lecture = lecture
+                progress.percent = 0.0
+                progress.save()
             selection.save()
             return Response(1)
-
 
     def delete(self, request, format=None):
         selection = Selection.objects.get(Q(user=request.data["user"]) & Q(course=request.data['course']))
@@ -244,6 +259,8 @@ class SelectionAPI(APIView):
             except:
                 print("execution No Existed!")
         for lecture in lectures:
+            progress = Progress.objects.get(Q(lecture=lecture.id) & Q(user=request.data["user"]))
+            progress.delete()
             comments = Comment.objects.filter(Q(lecture=lecture.id) & Q(user=request.data["user"]))
             for comment in comments:
                 comment.delete()

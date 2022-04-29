@@ -12,4 +12,5 @@ urlpatterns = [
     path('updateAssignment/', views.AssignmentAPI.as_view()),
     path('deleteAssignmnet/', views.AssignmentAPI.as_view()),
     path('getExecutionStatusCount/', views.ExecutionAPI.as_view()),
+    path('getActivityLog/', views.LogAPI.as_view()),
 ]

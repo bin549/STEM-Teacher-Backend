@@ -62,7 +62,6 @@ class Lecture(models.Model):
     media = models.ImageField(null=True, blank=True, upload_to='profiles/', default="profiles/about-us-video.mp4")
     format = models.ForeignKey(Format, null=True, blank=True, on_delete=models.CASCADE)
     is_preview = models.BooleanField(default=False, null=True)
-    is_free = models.BooleanField(default=False, null=True)
     is_comment_check = models.BooleanField(default=False, null=True)
     course = models.ForeignKey(Entity, null=True, blank=True, on_delete=models.CASCADE)
 
@@ -131,3 +130,14 @@ class Evaluation(models.Model):
 
     def __str__(self):
         return '%s' % self.id
+
+
+class Progress(models.Model):
+
+    id = models.UUIDField(default=uuid.uuid4, unique=True, primary_key=True, editable=False)
+    user = models.ForeignKey(Profile, null=True, blank=True, on_delete=models.CASCADE)
+    lecture = models.ForeignKey(Lecture, null=True, blank=True, on_delete=models.CASCADE)
+    percent = models.FloatField()
+
+    def __str__(self):
+        return '%s' % self.percent
