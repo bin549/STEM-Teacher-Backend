@@ -11,6 +11,7 @@ from rest_framework.decorators import api_view
 from django.db.models import Q
 from homework.models import Assignment, Execution
 from rest_framework import status
+from django.db import connection
 
 
 class CourseAPI(APIView):
@@ -43,6 +44,7 @@ class CourseAPI(APIView):
             return Response(serializer.data)
 
     def post(self, request, format=None):
+        print(request.data)
         try:
             course = Entity()
             owner = Profile.objects.get(Q(id=request.data['owner']))
@@ -166,6 +168,15 @@ class LectureAPI(APIView):
             return Response(serializer.data)
 
     def post(self, request, format=None):
+        index = 0
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT MAX(index) FROM course_lecture WHERE course_id = %s", [request.data['course']])
+            row = cursor.fetchone()
+            index = row[0]
+            if index is None:
+                index = 0
+            else:
+                index += 1
         try:
             lecture = Lecture()
             course = Entity.objects.get(Q(id=request.data['course']))
@@ -173,11 +184,15 @@ class LectureAPI(APIView):
             format = Format.objects.get(Q(id=request.data['format']))
             lecture.title = request.data['title']
             lecture.media = request.data['content']
+            lecture.index = index
             lecture.created_time = datetime.timedelta(days=30)
             lecture.course = course
             lecture.format = format
             lecture.is_preview = is_preview
             lecture.is_comment_check = True
+
+            # lecture.index = request.data['index']
+
             lecture.save()
             selections = Selection.objects.filter(Q(course=request.data["course"]))
             for selection in selections:
@@ -221,7 +236,6 @@ class FormatAPI(APIView):
 
 
 class SelectionAPI(APIView):
-
     def post(self, request, format=None):
         try:
             user = Profile.objects.get(Q(id=request.data['user']))
