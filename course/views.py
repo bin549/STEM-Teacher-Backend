@@ -17,7 +17,39 @@ from django.db import connection
 class CourseAPI(APIView):
 
     def get(self, request, format=None):
-        if request.query_params.__contains__('method'):
+        if request.query_params.__contains__('page'):
+            courses = Entity.objects.filter(Q(owner=request.query_params["id"]))
+            if request.query_params.__contains__('genre'):
+                courses = courses.filter(Q(genre=request.query_params["genre"]))
+            if request.query_params.__contains__('status'):
+                courses = courses.filter(Q(is_visible=request.query_params["status"]))
+            serializer = CourseSerializer(courses, many=True)
+            return Response(serializer.data)
+        elif request.query_params.__contains__('sort'):
+            if request.query_params["sort"] == "count":
+                courses = Entity.objects.filter(Q(owner=request.query_params["id"]))
+                sorted_courses = []
+                for course in courses:
+                    selections = Selection.objects.filter(Q(course=course.id))
+                    sorted_courses.append({"id": course.id, "title": course.title, "price": course.price, "count": len(selections)})
+                length = len(sorted_courses)
+                for i in range(length - 1):
+                    least = i
+                    for k in range(i + 1, length):
+                        if sorted_courses[k]["count"] > sorted_courses[least]["count"]:
+                            least = k
+                    if least != i:
+                        sorted_courses[least], sorted_courses[i] = (sorted_courses[i], sorted_courses[least])
+                if len(courses) > 5:
+                    sorted_courses = sorted_courses[0:5]
+                return Response(sorted_courses)
+            elif request.query_params["sort"] == "created_time":
+                courses = Entity.objects.filter(Q(owner=request.query_params["id"])).order_by("-created_time")
+                if len(courses) > 5:
+                    courses = courses[0:5]
+                serializer = CourseSerializer(courses[0:5], many=True)
+                return Response(serializer.data)
+        elif request.query_params.__contains__('method'):
             course = Entity.objects.get(Q(id=request.query_params["id"]))
             serializer = CourseSerializer(course, many=False)
             return Response(serializer.data)
@@ -26,25 +58,13 @@ class CourseAPI(APIView):
             course = Entity.objects.get(Q(id=assignment.course.id))
             serializer = CourseSerializer(course, many=False)
             return Response(serializer.data)
-        elif request.query_params.__contains__('is_sort'):
-            courses = Entity.objects.filter(Q(owner=request.query_params["id"])).order_by("-created_time")
-            if len(courses) > 5:
-                serializer = CourseSerializer(courses[0:5], many=True)
-                return Response(serializer.data)
-            else:
-                serializer = CourseSerializer(courses, many=True)
-                return Response(serializer.data)
         else:
             courses = Entity.objects.filter(Q(owner=request.query_params["id"]))
-            if request.query_params.__contains__('genre'):
-                courses = courses.filter(Q(genre=request.query_params["genre"]))
-            if request.query_params.__contains__('status'):
-                courses = courses.filter(Q(is_visible=request.query_params["status"]))
             serializer = CourseSerializer(courses, many=True)
             return Response(serializer.data)
 
+
     def post(self, request, format=None):
-        print(request.data)
         try:
             course = Entity()
             owner = Profile.objects.get(Q(id=request.data['owner']))
@@ -149,7 +169,7 @@ class LectureAPI(APIView):
             print(serializer.data)
             return Response(serializer.data)
         elif request.query_params.__contains__('mode'):
-            if (request.query_params["mode"] == "count"):
+            if request.query_params["mode"] == "count":
                 lectures = Lecture.objects.filter(Q(course=request.query_params["course_id"]))
                 return Response(len(lectures))
             else:

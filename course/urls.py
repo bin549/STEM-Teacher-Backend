@@ -6,7 +6,7 @@ urlpatterns = [
     path('createCourse/', views.CourseAPI.as_view()),
     path('deleteCourse/', views.CourseAPI.as_view()),
     path('updateStatus/', views.CourseAPI.as_view()),
-    path('getCourseByUserId/', views.CourseAPI.as_view()),
+    path('getCoursesByOwnerId/', views.CourseAPI.as_view()),
     path('getCourseById/', views.CourseAPI.as_view()),
     path('updateCourse/', views.CourseAPI.as_view()),
     path('getCourseId/', views.CourseAPI.as_view()),
