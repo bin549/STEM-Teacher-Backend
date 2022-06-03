@@ -1,6 +1,6 @@
 import datetime
 from django.shortcuts import render
-from .models import Assignment, Execution, Media, MediaType, ExecutionStar, Log
+from .models import Assignment, Execution, Media, MediaType, ExecutionStar, Log, LogType
 from .serializer import ActivitySerializer, ExecutionSerializer, MediaSerializer
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -105,6 +105,12 @@ class ExecutionAPI(APIView):
                 execution = Execution.objects.get(Q(id=request.data["id"]))
                 execution.is_excellent = True
                 execution.save()
+                log = Log()
+                log_type = LogType.objects.get(Q(name="评优"))
+                log.execution = execution
+                log.log_type = log_type
+                log.log_time = datetime.timedelta(days=30)
+                log.save()
                 return Response(1)
             else:
                 execution = Execution.objects.get(Q(id=request.data['id']))
@@ -129,7 +135,7 @@ class MediaAPI(APIView):
 class LogAPI(APIView):
 
     def get(self, request, format=None):
-        logs = Log.objects.all()
+        logs = Log.objects.all().order_by("-log_time")
         datas = []
         for log in logs:
             title = ""
@@ -140,11 +146,16 @@ class LogAPI(APIView):
                 title += "活动完成("
                 title += log.execution.homework.course.title
                 title += ")"
+            elif log.log_type.name == "评优":
+                content += log.execution.user.name
+                content += "的作业已评为优秀作业"
+                title += "活动评优("
+                title += log.execution.homework.course.title
+                title += ")"
             data = {
                 "title" : title,
                 "content" : content,
                 "timestamp" : log.log_time,
             }
             datas.append(data)
-        print(datas)
         return Response(datas)
