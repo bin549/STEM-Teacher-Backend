@@ -25,8 +25,8 @@ class CourseAPI(APIView):
                 courses = courses.filter(Q(is_visible=request.query_params["status"]))
             serializer = CourseSerializer(courses, many=True)
             return Response(serializer.data)
-        elif request.query_params.__contains__('sort'):
-            if request.query_params["sort"] == "count":
+        elif request.query_params.__contains__('sort_by'):
+            if request.query_params["sort_by"] == "count":
                 courses = Entity.objects.filter(Q(owner=request.query_params["id"]))
                 sorted_courses = []
                 for course in courses:
@@ -43,7 +43,7 @@ class CourseAPI(APIView):
                 if len(courses) > 5:
                     sorted_courses = sorted_courses[0:5]
                 return Response(sorted_courses)
-            elif request.query_params["sort"] == "created_time":
+            elif request.query_params["sort_by"] == "created_time":
                 courses = Entity.objects.filter(Q(owner=request.query_params["id"])).order_by("-created_time")
                 if len(courses) > 5:
                     courses = courses[0:5]
@@ -84,22 +84,22 @@ class CourseAPI(APIView):
             return Response(0)
 
     def put(self, request, format=None):
-        try:
-            course = Entity.objects.get(Q(id=request.data['id']))
-            if request.data['update'] == "row":
-                course.title = request.data['title']
-                course.description = request.data['description']
-                course.price = request.data['price']
-                genre = Genre.objects.get(Q(id=request.data['genre']))
-                course.genre = genre
-                if request.data['cover_name']:
-                    course.cover_img = request.data['cover_name']
-            if request.data['update'] == "status":
-                course.is_visible = request.data['status']
-            course.save()
-            return Response(1)
-        except Exception:
-            return Response(0)
+        print(request.data)
+        course = Entity.objects.get(Q(id=request.data['id']))
+        if "is_visible" in request.data:
+            course.is_visible = request.data['is_visible']
+        else:
+            course.title = request.data['title']
+            course.description = request.data['description']
+            course.price = request.data['price']
+            genre = Genre.objects.get(Q(id=request.data['genre']))
+            course.genre = genre
+            course.is_visible = genre
+            if "cover_img" in request.data:
+                course.is_visible = request.data['cover_img']
+        course.save()
+        return Response(1)
+
 
     def delete(self, request, format=None):
         try:
@@ -181,7 +181,6 @@ class LectureAPI(APIView):
             lectures = Lecture.objects.filter(Q(course=request.query_params["course_id"])).order_by(request.query_params['sort'])
             serializer = LectureSerializer(lectures, many=True)
             return Response(serializer.data)
-
         else:
             lectures = Lecture.objects.filter(Q(course=request.query_params["course_id"]))
             serializer = LectureSerializer(lectures, many=True)
@@ -226,11 +225,9 @@ class LectureAPI(APIView):
             return Response(0)
 
     def put(self, request, format=None):
-        if request.query_params.__contains__('status'):
-            lecture = Lecture.objects.get(Q(id=request.query_params['id']))
-            lecture.is_preview = request.query_params["status"]
-            lecture.save()
-            return Response(1)
+        lecture = Lecture.objects.get(Q(id=request.data['id']))
+        lecture.is_preview = request.data["is_preview"]
+        lecture.save()
         return Response(1)
 
     def delete(self, request, format=None):
@@ -317,13 +314,13 @@ class CommentAPI(APIView):
         return Response(serializer.data)
 
     def put(self, request, format=None):
-        lecture = Lecture.objects.get(Q(id=request.query_params["id"]))
+        lecture = Lecture.objects.get(Q(id=request.data["id"]))
         lecture.is_comment_check = True
         lecture.save()
         return Response(1)
 
     def delete(self, request, format=None):
-        comment = Comment.objects.get(Q(id=request.query_params["id"]))
+        comment = Comment.objects.get(Q(id=request.data["id"]))
         comment.delete()
         return Response(1)
 

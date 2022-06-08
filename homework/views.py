@@ -23,15 +23,15 @@ class AssignmentAPI(APIView):
             return Response(serializer.data)
 
     def post(self, request, format=None):
-        n_course = Entity.objects.get(Q(id=request.query_params['course']))
+        n_course = Entity.objects.get(Q(id=request.data['course']))
         assignment = Assignment()
         assignment.course = n_course
-        assignment.intro = request.query_params['intro']
-        assignment.description = request.query_params['description']
-        assignment.start_time = request.query_params['start_time']
-        assignment.end_time = request.query_params['end_time']
+        assignment.intro = request.data['intro']
+        assignment.description = request.data['description']
+        assignment.start_time = request.data['start_time']
+        assignment.end_time = request.data['end_time']
         assignment.save()
-        selections = Selection.objects.filter(Q(course=request.query_params['course']))
+        selections = Selection.objects.filter(Q(course=request.data['course']))
         for selection in selections:
             execution = Execution()
             execution.homework = assignment
@@ -40,15 +40,15 @@ class AssignmentAPI(APIView):
         return Response(1)
 
     def put(self, request, format=None):
-        activity = Assignment.objects.get(Q(id=request.query_params["id"]))
-        activity.intro = request.query_params['intro']
-        activity.description = request.query_params['description']
+        activity = Assignment.objects.get(Q(id=request.data["id"]))
+        activity.intro = request.data['intro']
+        activity.description = request.data['description']
         activity.save()
         return Response(1)
 
     def delete(self, request, format=None):
-        activity = Assignment.objects.get(Q(id=request.query_params['id']))
-        executions = Execution.objects.filter(Q(homework=request.query_params['id']))
+        activity = Assignment.objects.get(Q(id=request.data['id']))
+        executions = Execution.objects.filter(Q(homework=request.data['id']))
         for execution in executions:
             medias = Media.objects.filter(Q(execution=execution.id))
             executionStars = ExecutionStar.objects.filter(Q(execution=execution.id))
@@ -100,7 +100,7 @@ class ExecutionAPI(APIView):
             return Response(serializer.data)
 
     def put(self, request, format=None):
-        if request.data.__contains__("mode"):
+        if "mode" in request.data:
             if request.data["mode"] == "status":
                 execution = Execution.objects.get(Q(id=request.data["id"]))
                 execution.is_excellent = True
